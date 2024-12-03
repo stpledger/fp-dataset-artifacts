@@ -1,4 +1,5 @@
 import datasets
+from datasets import concatenate_datasets
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, \
     AutoModelForQuestionAnswering, Trainer, TrainingArguments, HfArgumentParser
 import evaluate
@@ -8,6 +9,14 @@ import os
 import json
 
 NUM_PREPROCESSING_WORKERS = 2
+
+
+# class ModifiedTrainer(Trainer):
+#     def __init__():
+#         super.__init__()
+
+#     def compute_loss():
+
 
 
 def main():
@@ -69,6 +78,7 @@ def main():
             default_datasets[args.task]
         # MNLI has two validation splits (one with matched domains and one with mismatched domains). Most datasets just have one "validation" split
         eval_split = 'validation_matched' if dataset_id == ('glue', 'mnli') else 'validation'
+        # eval_split = 'test_r2' if dataset_id == ('anli',) else eval_split
         # Load the raw data
         dataset = datasets.load_dataset(*dataset_id)
     
@@ -119,6 +129,12 @@ def main():
             remove_columns=train_dataset.column_names
         )
     if training_args.do_eval:
+        # print(dataset.keys())
+        if dataset_id == ('anli',):
+            dataset['validation'] = concatenate_datasets([dataset['test_r1'], dataset['test_r2'], dataset['test_r3']])
+            # dataset['validation'] = concatenate_datasets([dataset['train_r1'], dataset['dev_r1'], dataset['test_r1'], \
+                                                        #   dataset['train_r2'], dataset['dev_r2'], dataset['test_r2'], \
+                                                        #     dataset['train_r3'], dataset['dev_r3'], dataset['test_r3']])
         eval_dataset = dataset[eval_split]
         if args.max_eval_samples:
             eval_dataset = eval_dataset.select(range(args.max_eval_samples))
