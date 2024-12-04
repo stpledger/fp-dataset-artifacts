@@ -1,8 +1,29 @@
 Training:
 python run.py --do_train --task nli --dataset snli --eval_strategy steps --eval_steps 5000 --use_modified_loss True --output_dir ./updated_model/
+
 python run.py --do_train --task nli --dataset anli --model ./trained_model/ --output_dir ./anli_model_1_std_std/ --training_round 1 --per_device_train_batch_size 64 --num_train_epochs 5 --save_steps 200 --eval_strategy steps --eval_steps 200 --logging_steps 50
 python run.py --do_train --task nli --dataset anli --model ./trained_model/ --output_dir ./anli_model_1_std_mod_10/ --use_modified_loss True --training_round 1 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy no --eval_strategy epoch --logging_steps 50
 
+python run.py --do_train --task nli --dataset anli --model ./trained_model/ --output_dir ./anli_model_1_std_mod_5/ --use_modified_loss True --training_round 1 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+python run.py --do_train --task nli --dataset anli --model ./anli_model_1_std_mod_5/ --output_dir ./anli_model_2_std_mod_5/ --use_modified_loss True --training_round 2 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+python run.py --do_train --task nli --dataset anli --model ./anli_model_2_std_mod_5/ --output_dir ./anli_model_3_std_mod_5/ --use_modified_loss True --training_round 3 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
 
-python run.py --do_eval --task nli --dataset snli --model ./anli_model_1_std_mod_10/ --output_dir ./anli_model_1_std_mod_10/snli/ --per_device_eval_batch_size 256
-python run.py --do_eval --task nli --dataset anli --model ./anli_model_1_std_mod_10/ --output_dir ./anli_model_1_std_mod_10/anli/ --per_device_eval_batch_size 256
+python run.py --do_train --task nli --dataset anli --model ./trained_model/ --output_dir ./anli_model_1_std_std/ --training_round 2 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+python run.py --do_train --task nli --dataset anli --model ./anli_model_1_std_std/ --output_dir ./anli_model_2_std_std/ --training_round 2 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+python run.py --do_train --task nli --dataset anli --model ./anli_model_2_std_std/ --output_dir ./anli_model_3_std_std/ --training_round 3 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+
+python run.py --do_train --task nli --dataset anli --output_dir ./anli_model_base_1/ --training_round 1 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+python run.py --do_train --task nli --dataset anli --model ./anli_model_base_1/ --output_dir ./anli_model_base_2/ --training_round 2 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+python run.py --do_train --task nli --dataset anli --model ./anli_model_base_2/ --output_dir ./anli_model_base_3/ --training_round 3 --per_device_train_batch_size 64 --per_device_eval_batch_size 256 --num_train_epochs 5 --save_strategy epoch --eval_strategy steps --eval_steps 200 --logging_steps 50
+
+
+
+Evaluation:
+python run.py --do_eval --task nli --dataset snli --model ./anli_model_3_std_mod_5/ --output_dir ./anli_model_3_std_mod_5/snli/ --per_device_eval_batch_size 256
+python run.py --do_eval --task nli --dataset anli --model ./anli_model_3_std_mod_5/ --output_dir ./anli_model_3_std_mod_5/anli/ --per_device_eval_batch_size 256
+
+python run.py --do_eval --task nli --dataset snli --model ./anli_model_3_std_std/ --output_dir ./anli_model_3_std_std/snli/ --per_device_eval_batch_size 256
+python run.py --do_eval --task nli --dataset anli --model ./anli_model_3_std_std/ --output_dir ./anli_model_3_std_std/anli/ --per_device_eval_batch_size 256
+
+python run.py --do_eval --task nli --dataset snli --model ./anli_model_base_3/ --output_dir ./anli_model_base_3/snli/ --per_device_eval_batch_size 256
+python run.py --do_eval --task nli --dataset anli --model ./anli_model_base_3/ --output_dir ./anli_model_base_3/anli/ --per_device_eval_batch_size 256
