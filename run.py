@@ -4,20 +4,13 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, \
     AutoModelForQuestionAnswering, Trainer, TrainingArguments, HfArgumentParser
 import evaluate
 from helpers import prepare_dataset_nli, prepare_train_dataset_qa, \
-    prepare_validation_dataset_qa, QuestionAnsweringTrainer, compute_accuracy
+    prepare_validation_dataset_qa, QuestionAnsweringTrainer, compute_accuracy, \
+    ModifiedLossTrainer, compute_loss_fn
 import os
 import json
+import tensorboard
 
 NUM_PREPROCESSING_WORKERS = 2
-
-
-# class ModifiedTrainer(Trainer):
-#     def __init__():
-#         super.__init__()
-
-#     def compute_loss():
-
-
 
 def main():
     argp = HfArgumentParser(TrainingArguments)
@@ -56,6 +49,8 @@ def main():
                       help='Limit the number of examples to train on.')
     argp.add_argument('--max_eval_samples', type=int, default=None,
                       help='Limit the number of examples to evaluate on.')
+    argp.add_argument('--use_modified_loss', type=bool, default=False,
+                      help='Use custom loss function')
 
     training_args, args = argp.parse_args_into_dataclasses()
 
@@ -77,7 +72,7 @@ def main():
         dataset_id = tuple(args.dataset.split(':')) if args.dataset is not None else \
             default_datasets[args.task]
         # MNLI has two validation splits (one with matched domains and one with mismatched domains). Most datasets just have one "validation" split
-        eval_split = 'validation_matched' if dataset_id == ('glue', 'mnli') else 'validation'
+        eval_split = 'validation_matched' if dataset_id == ('glue', 'mnli') else 'test'
         # eval_split = 'test_r2' if dataset_id == ('anli',) else eval_split
         # Load the raw data
         dataset = datasets.load_dataset(*dataset_id)
@@ -120,6 +115,7 @@ def main():
     eval_dataset_featurized = None
     if training_args.do_train:
         train_dataset = dataset['train']
+        eval_dataset = dataset['validation']
         if args.max_train_samples:
             train_dataset = train_dataset.select(range(args.max_train_samples))
         train_dataset_featurized = train_dataset.map(
@@ -128,11 +124,17 @@ def main():
             num_proc=NUM_PREPROCESSING_WORKERS,
             remove_columns=train_dataset.column_names
         )
+        eval_dataset_featurized = eval_dataset.map(
+            prepare_eval_dataset,
+            batched=True,
+            num_proc=NUM_PREPROCESSING_WORKERS,
+            remove_columns=eval_dataset.column_names
+        )
     if training_args.do_eval:
         # print(dataset.keys())
         if dataset_id == ('anli',):
-            dataset['validation'] = concatenate_datasets([dataset['test_r1'], dataset['test_r2'], dataset['test_r3']])
-            # dataset['validation'] = concatenate_datasets([dataset['train_r1'], dataset['dev_r1'], dataset['test_r1'], \
+            dataset['test'] = concatenate_datasets([dataset['test_r1'], dataset['test_r2'], dataset['test_r3']])
+            # dataset['test'] = concatenate_datasets([dataset['train_r1'], dataset['dev_r1'], dataset['test_r1'], \
                                                         #   dataset['train_r2'], dataset['dev_r2'], dataset['test_r2'], \
                                                         #     dataset['train_r3'], dataset['dev_r3'], dataset['test_r3']])
         eval_dataset = dataset[eval_split]
@@ -147,6 +149,7 @@ def main():
 
     # Select the training configuration
     trainer_class = Trainer
+    # trainer_class = Trainer if args.use_modified_loss is False else ModifiedLossTrainer
     eval_kwargs = {}
     # If you want to use custom metrics, you should define your own "compute_metrics" function.
     # For an example of a valid compute_metrics function, see compute_accuracy in helpers.py.
@@ -161,6 +164,8 @@ def main():
             predictions=eval_preds.predictions, references=eval_preds.label_ids)
     elif args.task == 'nli':
         compute_metrics = compute_accuracy
+        compute_loss_func = compute_loss_fn if args.use_modified_loss else None
+
     
 
     # This function wraps the compute_metrics function, storing the model's predictions
@@ -178,7 +183,8 @@ def main():
         train_dataset=train_dataset_featurized,
         eval_dataset=eval_dataset_featurized,
         tokenizer=tokenizer,
-        compute_metrics=compute_metrics_and_store_predictions
+        compute_metrics=compute_metrics_and_store_predictions,
+        compute_loss_func=compute_loss_func
     )
     # Train and/or evaluate
     if training_args.do_train:

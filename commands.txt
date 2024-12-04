@@ -1,5 +1,5 @@
-python run.py --do_train --task nli --dataset snli --output_dir ./trained_model/
+python run.py --do_train --task nli --dataset snli --eval_strategy steps --eval_steps 5000 --use_modified_loss True --output_dir ./updated_model/
 
 python run.py --do_eval --task nli --dataset snli --model ./trained_model/ --output_dir ./eval_output/
 
-python run.py --do_eval --task nli --dataset anli --model ./trained_model/ --output_dir ./eval_output/
+python run.py --do_eval --task nli --dataset anli --model ./updated_model/checkpoint-135000/ --output_dir ./eval_output/
