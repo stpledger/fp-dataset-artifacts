@@ -51,6 +51,8 @@ def main():
                       help='Limit the number of examples to evaluate on.')
     argp.add_argument('--use_modified_loss', type=bool, default=False,
                       help='Use custom loss function')
+    argp.add_argument('--training_round', type=int, default=None,
+                      help='Round of ANLI training')
 
     training_args, args = argp.parse_args_into_dataclasses()
 
@@ -114,8 +116,13 @@ def main():
     train_dataset_featurized = None
     eval_dataset_featurized = None
     if training_args.do_train:
-        train_dataset = dataset['train']
-        eval_dataset = dataset['validation']
+        if dataset_id == ('anli',):
+            train_dataset = dataset[f'train_r{args.training_round}']
+            eval_dataset = dataset[f'dev_r{args.training_round}']
+        else:
+            train_dataset = dataset['train']
+            eval_dataset = dataset['validation']
+
         if args.max_train_samples:
             train_dataset = train_dataset.select(range(args.max_train_samples))
         train_dataset_featurized = train_dataset.map(

@@ -341,27 +341,18 @@ class ModifiedLossTrainer(Trainer):
     
 
 def compute_loss_fn(outputs, labels, num_items_in_batch):
+    SCALE_FACTOR = 5.0
     logits = outputs.get("logits")
     # compute custom loss for 3 labels with different weights
-    loss_fct = nn.CrossEntropyLoss()
+    loss_fct = nn.CrossEntropyLoss(reduction='none')
     loss = loss_fct(logits.view(-1, 3), labels.view(-1))
 
-    # print(f'logits: {logits}')
-
-    
     # Get the predictions
     preds = torch.argmax(logits, dim=-1)
-
-    # print(f'preds: {preds}')
-    # print(f'labels: {labels}')
-
-    # print(f'loss: {loss}')
     
     # Increase loss by 1.5 times if prediction is 0 but label is 2 or vice versa
     condition = ((preds == 0) & (labels == 2)) | ((preds == 2) & (labels == 0))
-    loss = torch.where(condition, loss * 1.5, loss)
-
-    # print(f'loss: {loss}')
+    loss = torch.where(condition, loss * SCALE_FACTOR, loss)
 
     loss = loss.mean()
     
