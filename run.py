@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, \
 import evaluate
 from helpers import prepare_dataset_nli, prepare_train_dataset_qa, \
     prepare_validation_dataset_qa, QuestionAnsweringTrainer, compute_accuracy, \
-    ModifiedLossTrainer, compute_loss_fn
+    compute_loss_fn, compute_loss_fn_cust, compute_loss_fn_cust_2
 import os
 import json
 import tensorboard
@@ -171,7 +171,7 @@ def main():
             predictions=eval_preds.predictions, references=eval_preds.label_ids)
     elif args.task == 'nli':
         compute_metrics = compute_accuracy
-        compute_loss_func = compute_loss_fn if args.use_modified_loss else None
+        compute_loss_func = compute_loss_fn_cust if args.use_modified_loss else None
 
     
 

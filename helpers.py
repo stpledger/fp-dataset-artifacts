@@ -314,46 +314,48 @@ class QuestionAnsweringTrainer(Trainer):
         self.control = self.callback_handler.on_evaluate(self.args, self.state,
                                                          self.control, metrics)
         return metrics
+
     
 
-class ModifiedLossTrainer(Trainer):
-    def __init__(self, *args, eval_examples=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.eval_examples = eval_examples
-
-    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
-        labels = inputs.pop("labels")
-        # forward pass
-        outputs = model(**inputs)
-        logits = outputs.get("logits")
-        # compute custom loss for 3 labels with different weights
-        loss_fct = nn.CrossEntropyLoss()
-        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
-        
-        # Get the predictions
-        preds = torch.argmax(logits, dim=-1)
-        
-        # Increase loss by 1.5 times if prediction is 0 but label is 2 or vice versa
-        condition = ((preds == 0) & (labels == 2)) | ((preds == 2) & (labels == 0))
-        loss = torch.where(condition, loss * 1.5, loss)
-        
-        return (loss, outputs) if return_outputs else loss
-    
-
-def compute_loss_fn(outputs, labels, num_items_in_batch):
+def compute_loss_fn_cust(outputs, labels, num_items_in_batch):
     SCALE_FACTOR = 5.0
     logits = outputs.get("logits")
-    # compute custom loss for 3 labels with different weights
+    
     loss_fct = nn.CrossEntropyLoss(reduction='none')
     loss = loss_fct(logits.view(-1, 3), labels.view(-1))
-
-    # Get the predictions
+    
     preds = torch.argmax(logits, dim=-1)
     
-    # Increase loss by 1.5 times if prediction is 0 but label is 2 or vice versa
     condition = ((preds == 0) & (labels == 2)) | ((preds == 2) & (labels == 0))
     loss = torch.where(condition, loss * SCALE_FACTOR, loss)
 
     loss = loss.mean()
+    
+    return loss
+
+
+def compute_loss_fn_cust_2(outputs, labels, num_items_in_batch):
+    SCALE_FACTOR = 5.0
+    logits = outputs.get("logits")
+    
+    loss_fct = nn.CrossEntropyLoss(reduction='none')
+    loss = loss_fct(logits.view(-1, 3), labels.view(-1))
+    
+    preds = torch.argmax(logits, dim=-1)
+    
+    condition = preds != labels
+    loss = torch.where(condition, loss * SCALE_FACTOR, loss)
+
+    loss = loss.mean()
+    
+    return loss
+
+
+def compute_loss_fn(outputs, labels, num_items_in_batch):
+    SCALE_FACTOR = 3.0
+    logits = outputs.get("logits")
+    
+    loss_fct = nn.CrossEntropyLoss(weight=torch.tensor([SCALE_FACTOR, 1.0, SCALE_FACTOR]).to(logits.device))
+    loss = loss_fct(logits.view(-1, 3), labels.view(-1))
     
     return loss
